@@ -1,0 +1,15 @@
+{
+  "name": "Tempus Bellum",
+  "short_name": "Tempus Bellum",
+  "description": "Zegar faz do bitew bitewniakowych przy stole",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16181d",
+  "theme_color": "#16181d",
+  "lang": "pl",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
