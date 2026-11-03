@@ -1,17 +1,58 @@
 name: Release
 
-# Push a tag like v0.1.0 to build the desktop apps and publish them as a GitHub release.
+# Releases are automatic:
+#   - On every push to main, the workflow reads "version" from package.json.
+#     If tag v<version> does not exist yet, it builds the desktop apps,
+#     creates the tag and publishes a GitHub release.
+#     So to release: bump "version" in package.json (in a PR) and merge.
+#   - Pushing a v* tag by hand also publishes a release for that tag.
+#   - "Run workflow" in the Actions tab does the same as a push to main.
 on:
   push:
+    branches: [main]
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      release: ${{ steps.v.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Decide whether to release
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+            echo "Tag push: releasing $TAG"
+            RELEASE=true
+          else
+            TAG="v$(node -p "require('./package.json').version")"
+            if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+              echo "$TAG already exists, nothing to release. Bump \"version\" in package.json to release."
+              RELEASE=false
+            else
+              echo "$TAG does not exist yet: releasing"
+              RELEASE=true
+            fi
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "release=$RELEASE" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: check
+    if: needs.check.outputs.release == 'true'
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - os: ubuntu-latest
@@ -29,7 +70,30 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run ${{ matrix.script }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}
+          path: ${{ matrix.file }}
+          if-no-files-found: error
+
+  # One job publishes both files, so the two builds never race to create the release.
+  # It runs only if both builds succeeded, so a release always has both downloads.
+  publish:
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - run: ls -la out
       - uses: softprops/action-gh-release@v2
         with:
-          files: ${{ matrix.file }}
+          tag_name: ${{ needs.check.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Tempus Bellum ${{ needs.check.outputs.tag }}
           generate_release_notes: true
+          make_latest: true
+          files: |
+            out/Tempus-Bellum-linux-x86_64.AppImage
+            out/Tempus-Bellum-windows-x64.exe

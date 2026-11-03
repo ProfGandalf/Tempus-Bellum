@@ -59,8 +59,17 @@ npm run dist:linux # build the AppImage into dist/
 npm run dist:win   # build the Windows portable .exe into dist/
 ```
 
-Releasing: bump `version` in `package.json`, then push a tag such as `v0.1.0`.
-The [Release workflow](.github/workflows/release.yml) builds both apps and attaches them to a GitHub release.
+### Releasing
+
+Releases are automated by the [Release workflow](.github/workflows/release.yml):
+
+1. Bump `version` in `package.json` (e.g. `0.1.0` → `0.2.0`) and merge it into `main`.
+2. The workflow sees that tag `v0.2.0` does not exist yet, builds the Linux AppImage and the Windows `.exe`,
+   creates the tag and publishes the release with auto-generated notes.
+   The download links above point to it immediately.
+
+Pushes to `main` that do not change the version do not create a release.
+A release can also be triggered by pushing a `v*` tag by hand, or with *Run workflow* in the Actions tab.
 
 ## Roadmap
 
