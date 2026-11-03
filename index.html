@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#16181d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Tempus Bellum</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --bg:#16181d; --panel:#21242b; --panel2:#2b2f38; --text:#eef0f4; --muted:#9aa1ad;
+  --line:#3a3f4a; --accent:#e0b04a; --danger:#d9534f; --ok:#4caf7a;
+  --pc:#c0392b; /* bieżący kolor gracza */
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+body{display:flex;flex-direction:column;min-height:100dvh}
+button{font:inherit;color:inherit;border:0;border-radius:14px;background:var(--panel2);cursor:pointer;
+  padding:14px 16px;touch-action:manipulation;user-select:none}
+button:active{filter:brightness(1.25)}
+button:disabled{opacity:.35}
+input,select,textarea{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;width:100%}
+.hidden{display:none!important}
+.screen{flex:1;display:flex;flex-direction:column;padding:16px;padding-top:max(16px,env(safe-area-inset-top));
+  padding-bottom:max(16px,env(safe-area-inset-bottom));gap:14px;max-width:900px;width:100%;margin:0 auto}
+h1{margin:0;font-size:1.6rem;letter-spacing:.04em}
+h1 small{color:var(--muted);font-weight:400;font-size:.9rem;letter-spacing:0;display:block}
+h2{margin:8px 0 0;font-size:1.05rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.card{background:var(--panel);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:10px;align-items:center}
+.row > *{min-width:0}
+.grow{flex:1}
+.swatch{width:44px;height:44px;flex:none;border-radius:10px;border:2px solid #0004;padding:0}
+.primary{background:var(--accent);color:#1b1b1b;font-weight:700;font-size:1.2rem;padding:18px}
+.danger{background:var(--danger)}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+
+/* --- ekran gry --- */
+#game{padding:12px;gap:10px;max-width:none}
+#game .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+#who{font-size:clamp(1.8rem,7vw,3.4rem);font-weight:800;line-height:1.05;color:var(--pc);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#round{font-size:clamp(1rem,3.5vw,1.5rem);color:var(--muted);white-space:nowrap;text-align:right}
+#round b{color:var(--text);font-size:1.4em}
+#phaseLine{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#phase{font-size:clamp(1.6rem,6vw,3rem);font-weight:700}
+#phaseTime{font-size:clamp(2.6rem,12vw,6rem);font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+#steps{display:flex;gap:4px}
+#steps span{flex:1;height:8px;border-radius:4px;background:var(--panel2)}
+#steps span.done{background:color-mix(in srgb,var(--pc) 55%,transparent)}
+#steps span.now{background:var(--pc)}
+#sub{display:flex;gap:16px;flex-wrap:wrap;color:var(--muted);font-variant-numeric:tabular-nums}
+#sub b{color:var(--text)}
+#next{flex:1;min-height:45vh;border-radius:24px;background:var(--pc);color:#fff;
+  font-size:clamp(1.6rem,7vw,3.2rem);font-weight:800;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:6px;box-shadow:inset 0 -8px 0 #0003;text-shadow:0 2px 4px #0006}
+#next small{font-size:.45em;font-weight:600;opacity:.9}
+#next.paused{background:var(--ok)}
+#next.ended{background:var(--panel2)}
+.ctrl{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.ctrl button{padding:18px 6px;font-size:1.05rem;font-weight:600}
+#pauseBtn.on{background:var(--ok);color:#111}
+#pausedBanner{position:fixed;inset:0;pointer-events:none;display:flex;align-items:flex-start;justify-content:center;
+  padding-top:30vh}
+#pausedBanner div{background:#000c;padding:10px 22px;border-radius:12px;font-weight:800;letter-spacing:.2em;font-size:1.4rem}
+@media (orientation:landscape) and (max-height:600px){
+  #game{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto auto 1fr auto}
+  #game > .info{grid-column:1}
+  #next{grid-column:2;grid-row:1 / span 6;min-height:0}
+  #game .ctrl{grid-column:1;grid-row:6}
+}
+
+/* --- tabela --- */
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.95rem}
+th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel)}
+td:first-child,th:first-child{text-align:left}
+td.cell{cursor:pointer;position:relative}
+td.cell.live{outline:2px solid var(--accent);outline-offset:-2px}
+td.cell.adj::after{content:"✎";font-size:.7em;color:var(--accent);position:absolute;top:2px;right:2px}
+tr.sum td{font-weight:700;border-bottom:2px solid var(--line)}
+tr.ph td{background:var(--panel2);font-weight:700;text-align:left;color:var(--pc)}
+.totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tot{background:var(--panel2);border-radius:12px;padding:12px;border-left:6px solid var(--c)}
+.tot b{display:block;font-size:1.6rem;font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:3px;background:var(--c);margin-top:6px}
+
+/* --- modal --- */
+dialog{background:var(--panel);color:var(--text);border:0;border-radius:18px;padding:0;width:min(960px,96vw);
+  max-height:92dvh}
+dialog::backdrop{background:#000a}
+dialog .card{max-height:92dvh;overflow:auto}
+.history button{text-align:left;display:flex;justify-content:space-between;gap:10px;width:100%}
+</style>
+</head>
+<body>
+
+<!-- ============ SETUP ============ -->
+<section id="setup" class="screen hidden">
+  <h1>TEMPUS BELLUM<small>Zegar faz do bitew przy stole</small></h1>
+
+  <div id="resumeBox" class="card hidden">
+    <div>Masz niezakończoną grę.</div>
+    <button class="primary" id="resumeBtn">Wróć do gry</button>
+  </div>
+
+  <h2>Gracze <span class="muted small">(kolejność = kto zaczyna)</span></h2>
+  <div class="card" id="playersBox"></div>
+  <div class="row">
+    <button class="grow" id="addPlayer">+ Gracz</button>
+    <button class="grow" id="swapPlayers">⇅ Zamień kolejność</button>
+  </div>
+
+  <h2>Gra</h2>
+  <div class="card">
+    <label class="row"><span class="grow">Liczba rund</span>
+      <input id="rounds" type="number" min="1" max="20" value="5" style="width:90px"></label>
+    <label>Fazy (po jednej w linii)
+      <textarea id="phases" rows="5"></textarea></label>
+  </div>
+
+  <button class="primary" id="startBtn">▶ Start gry</button>
+
+  <h2>Ostatnie gry</h2>
+  <div class="card history" id="historyBox"><span class="muted">Brak.</span></div>
+</section>
+
+<!-- ============ GRA ============ -->
+<section id="game" class="screen hidden">
+  <div class="info top">
+    <div id="who">—</div>
+    <div id="round">Runda <b id="roundNo">1</b>/<span id="roundMax">5</span></div>
+  </div>
+  <div class="info" id="phaseLine">
+    <div id="phase">—</div>
+    <div id="phaseTime">0:00</div>
+  </div>
+  <div class="info" id="steps"></div>
+  <div class="info" id="sub">
+    <span>Tura: <b id="turnTime">0:00</b></span>
+    <span>Gracz łącznie: <b id="playerTime">0:00</b></span>
+    <span>Gra: <b id="gameTime">0:00</b></span>
+    <span id="pauseInfo" class="hidden">Pauzy: <b id="pauseTime">0:00</b></span>
+  </div>
+  <button id="next">NASTĘPNA FAZA<small id="nextLabel"></small></button>
+  <div class="ctrl">
+    <button id="undoBtn">↶ Cofnij</button>
+    <button id="pauseBtn">❚❚ Pauza</button>
+    <button id="tableBtn">▦ Tabela</button>
+    <button id="endBtn">■ Koniec</button>
+  </div>
+  <div id="pausedBanner" class="hidden"><div>PAUZA</div></div>
+</section>
+
+<!-- ============ PODSUMOWANIE ============ -->
+<section id="summary" class="screen hidden">
+  <h1 id="sumTitle">Podsumowanie</h1>
+  <div class="muted small" id="sumMeta"></div>
+  <div class="totals" id="sumTotals"></div>
+  <div class="card"><div class="tablewrap" id="sumTable"></div>
+    <div class="muted small">Dotknij komórki, żeby ręcznie poprawić czas fazy.</div></div>
+  <div class="row">
+    <button class="grow" id="sumUndo">↶ Wróć do gry</button>
+    <button class="grow" id="sumCsv">⇩ CSV</button>
+    <button class="grow" id="sumJson">⇩ JSON</button>
+  </div>
+  <button class="primary" id="newGameBtn">Nowa gra</button>
+</section>
+
+<!-- tabela w trakcie gry -->
+<dialog id="tableDlg"><div class="card">
+  <div class="row"><h2 class="grow" style="margin:0">Czasy faz</h2><button id="closeTable">✕</button></div>
+  <div class="totals" id="dlgTotals"></div>
+  <div class="tablewrap" id="dlgTable"></div>
+  <div class="muted small">Dotknij komórki, żeby ręcznie poprawić czas (np. ktoś zapomniał kliknąć).</div>
+</div></dialog>
+
+<script>
+'use strict';
+/* =====================================================================
+   Model: zapisujemy ZDARZENIA, nie czasy. Czasy liczymy przy wyświetlaniu.
+   Zdarzenia:
+     {type:'phase',  t, p, r, f}   – start fazy f gracza p w rundzie r
+     {type:'pause',  t}            – pauza (czas nie leci)
+     {type:'resume', t}
+     {type:'end',    t}            – koniec gry
+     {type:'adjust', t, k, d}      – ręczna korekta: d ms do komórki k ("p|r|f")
+   Cofnij = usuń ostatnie zdarzenie.
+   ===================================================================== */
+const LS_CUR = 'tempus-bellum:current';
+const LS_ARCH = 'tempus-bellum:archive';
+const LS_PREFS = 'tempus-bellum:prefs';
+const DEFAULT_PHASES = ['Command','Movement','Shooting','Charge','Fight'];
+const COLORS = ['#c0392b','#2e6fd8','#2f9e5b','#8e44ad','#d68910','#16a3a3'];
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ console.warn(e); } },
+  del(k){ try{ localStorage.removeItem(k); }catch{} }
+};
+
+let cur = store.get(LS_CUR, null);   // {game, events}
+let viewing = null;                   // gra z archiwum oglądana w podsumowaniu
+
+/* ---------- formatowanie ---------- */
+function fmt(ms){
+  ms = Math.max(0, Math.round(ms/1000));
+  const h = Math.floor(ms/3600), m = Math.floor(ms%3600/60), s = ms%60;
+  return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+}
+function parseTime(str){
+  str = String(str).trim().replace(',', '.');
+  if(!str) return null;
+  const parts = str.split(':').map(Number);
+  if(parts.some(n => !isFinite(n) || n < 0)) return null;
+  let s = 0; for(const n of parts) s = s*60 + n;
+  return Math.round(s*1000);
+}
+const key = (p,r,f) => `${p}|${r}|${f}`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- logika kolejności ---------- */
+function nextPos(g, pos){
+  let {p,r,f} = pos;
+  if(++f >= g.phases.length){ f = 0; if(++p >= g.players.length){ p = 0; r++; } }
+  return r > g.rounds ? null : {p,r,f};
+}
+
+/* ---------- wyliczanie czasów ze zdarzeń ---------- */
+function compute(g, events, now = Date.now()){
+  const tot = {}, adjusted = new Set();
+  const add = (k, ms) => tot[k] = (tot[k] || 0) + ms;
+  let pos = null, segStart = 0, paused = false, pauseStart = 0, pausedMs = 0;
+  let ended = false, startT = null, endT = null, phaseMs = 0, phaseStartT = 0;
+  const close = t => { if(pos && !paused && !ended){ const d = t - segStart; add(key(pos.p,pos.r,pos.f), d); phaseMs += d; } };
+
+  for(const e of events){
+    switch(e.type){
+      case 'phase':
+        close(e.t);
+        if(startT === null) startT = e.t;
+        pos = {p:e.p, r:e.r, f:e.f}; segStart = e.t; phaseMs = 0; phaseStartT = e.t;
+        break;
+      case 'pause':
+        if(!paused){ close(e.t); paused = true; pauseStart = e.t; }
+        break;
+      case 'resume':
+        if(paused){ pausedMs += e.t - pauseStart; paused = false; segStart = e.t; }
+        break;
+      case 'end':
+        close(e.t);
+        if(paused){ pausedMs += e.t - pauseStart; paused = false; }
+        ended = true; endT = e.t;
+        break;
+      case 'adjust':
+        add(e.k, e.d); adjusted.add(e.k);
+        break;
+    }
+  }
+  let live = 0;
+  if(pos && !ended && !paused){ live = now - segStart; add(key(pos.p,pos.r,pos.f), live); }
+  const curPause = paused ? now - pauseStart : 0;
+  const stop = ended ? endT : now;
+  return {
+    tot, adjusted, pos, paused, ended,
+    phaseMs: phaseMs + live,
+    pausedMs: pausedMs + curPause,
+    curPause,
+    gameMs: startT === null ? 0 : stop - startT - pausedMs - curPause,
+    startT, endT
+  };
+}
+const cell = (c, p, r, f) => Math.max(0, c.tot[key(p,r,f)] || 0);
+function sumPlayerRound(g, c, p, r){ let s = 0; for(let f=0; f<g.phases.length; f++) s += cell(c,p,r,f); return s; }
+function sumPlayer(g, c, p){ let s = 0; for(let r=1; r<=g.rounds; r++) s += sumPlayerRound(g,c,p,r); return s; }
+function sumPlayerPhase(g, c, p, f){ let s = 0; for(let r=1; r<=g.rounds; r++) s += cell(c,p,r,f); return s; }
+
+/* ---------- zapis ---------- */
+function save(){
+  store.set(LS_CUR, cur);
+}
+function archive(entry){
+  const a = store.get(LS_ARCH, []).filter(x => x.game.id !== entry.game.id);
+  a.unshift(entry);
+  store.set(LS_ARCH, a.slice(0, 50));
+}
+function push(e){
+  e.t = e.t ?? Date.now();
+  cur.events.push(e);
+  save();
+  if(navigator.vibrate) navigator.vibrate(30);
+}
+
+/* ---------- Wake Lock ---------- */
+let wakeLock = null;
+async function lockScreen(){
+  try{
+    if('wakeLock' in navigator && document.visibilityState === 'visible' && !wakeLock){
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => wakeLock = null);
+    }
+  }catch(e){ /* brak wsparcia lub odmowa – trudno */ }
+}
+function unlockScreen(){ if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; } }
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && cur && !compute(cur.game, cur.events).ended) lockScreen();
+});
+
+/* ======================= SETUP ======================= */
+let setupPlayers = [];
+function initSetup(){
+  const prefs = store.get(LS_PREFS, {});
+  setupPlayers = prefs.players || [{name:'Gracz 1', color:COLORS[0]}, {name:'Gracz 2', color:COLORS[1]}];
+  $('rounds').value = prefs.rounds || 5;
+  $('phases').value = (prefs.phases || DEFAULT_PHASES).join('\n');
+}
+function renderPlayers(){
+  const box = $('playersBox'); box.innerHTML = '';
+  setupPlayers.forEach((pl, i) => {
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = `<span class="muted" style="width:1.2em">${i+1}.</span>
+      <input class="grow" value="${esc(pl.name)}" maxlength="30" aria-label="Nazwa gracza ${i+1}">
+      <input type="color" class="swatch" value="${pl.color}" aria-label="Kolor">
+      ${setupPlayers.length > 2 ? '<button aria-label="Usuń">✕</button>' : ''}`;
+    const [name, color] = row.querySelectorAll('input');
+    name.oninput = () => pl.name = name.value;
+    name.onfocus = () => name.select();
+    color.oninput = () => pl.color = color.value;
+    const del = row.querySelector('button');
+    if(del) del.onclick = () => { setupPlayers.splice(i,1); renderPlayers(); };
+    box.appendChild(row);
+  });
+}
+$('addPlayer').onclick = () => {
+  if(setupPlayers.length >= 6) return;
+  const n = setupPlayers.length;
+  setupPlayers.push({name:`Gracz ${n+1}`, color:COLORS[n % COLORS.length]});
+  renderPlayers();
+};
+$('swapPlayers').onclick = () => { setupPlayers.push(setupPlayers.shift()); renderPlayers(); };
+
+$('startBtn').onclick = () => {
+  if(cur && !compute(cur.game, cur.events).ended && cur.events.length > 1 &&
+     !confirm('Porzucić niezakończoną grę i zacząć nową?')) return;
+  if(cur && cur.events.length > 1) archive(cur);
+  const phases = $('phases').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const rounds = Math.min(20, Math.max(1, parseInt($('rounds').value) || 5));
+  const players = setupPlayers.map((p,i) => ({name: p.name.trim() || `Gracz ${i+1}`, color: p.color}));
+  if(!phases.length) return alert('Podaj co najmniej jedną fazę.');
+  store.set(LS_PREFS, {players, rounds, phases});
+  cur = { game: {id: Date.now().toString(36), createdAt: Date.now(), players, phases, rounds}, events: [] };
+  push({type:'phase', p:0, r:1, f:0});
+  show('game');
+};
+$('resumeBtn').onclick = () => show('game');
+
+function renderHistory(){
+  const a = store.get(LS_ARCH, []);
+  const box = $('historyBox');
+  if(!a.length){ box.innerHTML = '<span class="muted">Brak.</span>'; return; }
+  box.innerHTML = '';
+  a.forEach(entry => {
+    const c = compute(entry.game, entry.events);
+    const b = document.createElement('button');
+    const d = new Date(entry.game.createdAt);
+    b.innerHTML = `<span>${esc(entry.game.players.map(p=>p.name).join(' vs '))}<br>
+      <span class="muted small">${d.toLocaleDateString('pl-PL')} ${d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})}</span></span>
+      <b>${fmt(c.gameMs)}</b>`;
+    b.onclick = () => { viewing = entry; show('summary'); };
+    box.appendChild(b);
+  });
+}
+
+/* ======================= GRA ======================= */
+function lastPhaseEvent(){
+  for(let i = cur.events.length-1; i >= 0; i--) if(cur.events[i].type === 'phase') return cur.events[i];
+  return null;
+}
+function renderGame(){
+  if(!cur) return;
+  const g = cur.game, c = compute(g, cur.events);
+  if(c.ended){ viewing = null; show('summary'); return; }
+  const pos = c.pos, pl = g.players[pos.p];
+  document.documentElement.style.setProperty('--pc', pl.color);
+  document.querySelector('meta[name=theme-color]').content = pl.color;
+  $('who').textContent = pl.name;
+  $('roundNo').textContent = pos.r;
+  $('roundMax').textContent = g.rounds;
+  $('phase').textContent = g.phases[pos.f];
+  $('phaseTime').textContent = fmt(c.phaseMs);
+  $('turnTime').textContent = fmt(sumPlayerRound(g, c, pos.p, pos.r));
+  $('playerTime').textContent = fmt(sumPlayer(g, c, pos.p));
+  $('gameTime').textContent = fmt(c.gameMs);
+  $('pauseInfo').classList.toggle('hidden', c.pausedMs < 1000);
+  $('pauseTime').textContent = fmt(c.pausedMs);
+
+  const steps = $('steps');
+  if(steps.children.length !== g.phases.length) steps.innerHTML = g.phases.map(()=>'<span></span>').join('');
+  [...steps.children].forEach((s,i) => s.className = i < pos.f ? 'done' : i === pos.f ? 'now' : '');
+
+  const nx = nextPos(g, pos), btn = $('next');
+  btn.classList.toggle('paused', c.paused);
+  if(c.paused){
+    btn.firstChild.textContent = '▶ WZNÓW';
+    $('nextLabel').textContent = `pauza ${fmt(c.curPause)}`;
+  }else if(!nx){
+    btn.firstChild.textContent = 'KONIEC GRY';
+    $('nextLabel').textContent = 'to była ostatnia faza';
+  }else{
+    btn.firstChild.textContent = 'NASTĘPNA FAZA';
+    $('nextLabel').textContent = '→ ' + (nx.p !== pos.p ? `${g.players[nx.p].name}${nx.r !== pos.r ? ` · runda ${nx.r}` : ''} · ` : '') + g.phases[nx.f];
+  }
+  $('pauseBtn').classList.toggle('on', c.paused);
+  $('pauseBtn').textContent = c.paused ? '▶ Wznów' : '❚❚ Pauza';
+  $('pausedBanner').classList.toggle('hidden', !c.paused);
+  $('undoBtn').disabled = cur.events.length <= 1;
+  if($('tableDlg').open) renderTable($('dlgTable'), $('dlgTotals'), cur, c);
+}
+
+let lastTap = 0;
+$('next').onclick = () => {
+  const now = Date.now();
+  if(now - lastTap < 600) return;   // ochrona przed podwójnym trafieniem łokciem
+  lastTap = now;
+  const g = cur.game, c = compute(g, cur.events, now);
+  if(c.ended) return;
+  if(c.paused){ push({type:'resume', t:now}); }
+  else{
+    const nx = nextPos(g, c.pos);
+    if(nx) push({type:'phase', t:now, ...nx});
+    else { if(!confirm('To była ostatnia faza. Zakończyć grę?')) return; endGame(now); return; }
+  }
+  renderGame();
+};
+$('pauseBtn').onclick = () => {
+  const c = compute(cur.game, cur.events);
+  push({type: c.paused ? 'resume' : 'pause'});
+  renderGame();
+};
+$('undoBtn').onclick = () => {
+  if(cur.events.length <= 1) return;
+  const e = cur.events[cur.events.length-1];
+  const g = cur.game;
+  const what = e.type === 'phase' ? `start fazy „${g.phases[e.f]}” (${g.players[e.p].name}, runda ${e.r})`
+    : e.type === 'pause' ? 'pauzę' : e.type === 'resume' ? 'wznowienie' : e.type === 'adjust' ? 'ręczną korektę' : 'zdarzenie';
+  cur.events.pop(); save();
+  toast(`Cofnięto: ${what}`);
+  renderGame();
+};
+$('endBtn').onclick = () => {
+  if(confirm('Zakończyć grę teraz?')) endGame(Date.now());
+};
+function endGame(t){
+  push({type:'end', t});
+  archive(cur);
+  unlockScreen();
+  viewing = null;
+  show('summary');
+}
+$('tableBtn').onclick = () => {
+  renderTable($('dlgTable'), $('dlgTotals'), cur, compute(cur.game, cur.events));
+  $('tableDlg').showModal();
+};
+$('closeTable').onclick = () => $('tableDlg').close();
+
+document.addEventListener('keydown', e => {
+  if($('game').classList.contains('hidden') || $('tableDlg').open) return;
+  if(e.code === 'Space' || e.code === 'Enter'){ e.preventDefault(); lastTap = 0; $('next').click(); }
+  else if(e.key === 'p') $('pauseBtn').click();
+  else if(e.key === 'z' || e.key === 'Backspace') $('undoBtn').click();
+});
+
+/* ======================= TABELA ======================= */
+function renderTable(tableEl, totalsEl, entry, c){
+  const g = entry.game;
+  const isLive = entry === cur && !c.ended;
+  const totals = g.players.map((_,p) => sumPlayer(g,c,p));
+  const max = Math.max(1, ...totals);
+  totalsEl.innerHTML = g.players.map((pl,p) => `<div class="tot" style="--c:${pl.color}">
+      ${esc(pl.name)}<b>${fmt(totals[p])}</b>
+      <div class="bar" style="width:${(totals[p]/max*100).toFixed(1)}%"></div></div>`).join('')
+    + `<div class="tot" style="--c:var(--muted)">Cała gra<b>${fmt(c.gameMs)}</b>
+      <span class="muted small">pauzy ${fmt(c.pausedMs)}</span></div>`;
+
+  // ostatnia runda z jakimkolwiek czasem – nie pokazujemy pustych rund z przyszłości
+  let lastR = 1;
+  for(let r=1; r<=g.rounds; r++) for(let p=0; p<g.players.length; p++) if(sumPlayerRound(g,c,p,r) > 0) lastR = r;
+  if(c.pos) lastR = Math.max(lastR, c.pos.r);
+
+  let h = `<table><thead><tr><th>Runda</th>${g.phases.map(f=>`<th>${esc(f)}</th>`).join('')}<th>Σ</th></tr></thead><tbody>`;
+  g.players.forEach((pl, p) => {
+    h += `<tr class="ph"><td colspan="${g.phases.length+2}" style="color:${pl.color}">${esc(pl.name)}</td></tr>`;
+    for(let r=1; r<=lastR; r++){
+      h += `<tr><td>${r}</td>`;
+      g.phases.forEach((_,f) => {
+        const k = key(p,r,f);
+        const live = isLive && c.pos.p===p && c.pos.r===r && c.pos.f===f;
+        h += `<td class="cell${live?' live':''}${c.adjusted.has(k)?' adj':''}" data-k="${k}">${c.tot[k] !== undefined ? fmt(cell(c,p,r,f)) : '<span class="muted">–</span>'}</td>`;
+      });
+      h += `<td><b>${fmt(sumPlayerRound(g,c,p,r))}</b></td></tr>`;
+    }
+    h += `<tr class="sum"><td>Σ</td>${g.phases.map((_,f)=>`<td>${fmt(sumPlayerPhase(g,c,p,f))}</td>`).join('')}<td>${fmt(totals[p])}</td></tr>`;
+  });
+  h += '</tbody></table>';
+  tableEl.innerHTML = h;
+  tableEl.querySelectorAll('td.cell').forEach(td => td.onclick = () => correctCell(entry, td.dataset.k));
+}
+
+function correctCell(entry, k){
+  const g = entry.game;
+  const [p,r,f] = k.split('|').map(Number);
+  const c = compute(g, entry.events);
+  const curMs = cell(c,p,r,f);
+  const v = prompt(`${g.players[p].name} · runda ${r} · ${g.phases[f]}\nObecnie: ${fmt(curMs)}\nNowy czas (m:ss):`, fmt(curMs));
+  if(v === null) return;
+  const ms = parseTime(v);
+  if(ms === null) return alert('Nie rozumiem tego czasu. Użyj formatu m:ss, np. 3:45.');
+  const d = ms - (c.tot[k] || 0);
+  if(Math.abs(d) < 500) return;
+  entry.events.push({type:'adjust', t:Date.now(), k, d});
+  if(entry === cur) save();
+  if(c.ended) archive(entry);
+  rerender();
+}
+
+/* ======================= PODSUMOWANIE ======================= */
+function summaryEntry(){ return viewing || cur; }
+function renderSummary(){
+  const entry = summaryEntry();
+  if(!entry){ show('setup'); return; }
+  const g = entry.game, c = compute(g, entry.events);
+  $('sumTitle').textContent = g.players.map(p=>p.name).join(' vs ');
+  const d = new Date(g.createdAt);
+  $('sumMeta').textContent = `${d.toLocaleString('pl-PL')} · ${g.rounds} rund · ${c.ended ? 'zakończona' : 'w trakcie'}`;
+  renderTable($('sumTable'), $('sumTotals'), entry, c);
+  $('sumUndo').classList.toggle('hidden', entry !== cur || !c.ended);
+  document.documentElement.style.setProperty('--pc', 'var(--accent)');
+  document.querySelector('meta[name=theme-color]').content = '#16181d';
+}
+$('sumUndo').onclick = () => {
+  // cofnięcie zdarzenia "koniec" – wracamy do gry
+  if(cur.events.at(-1)?.type === 'end'){ cur.events.pop(); save(); }
+  show('game');
+};
+$('newGameBtn').onclick = () => {
+  if(cur && compute(cur.game, cur.events).ended){ cur = null; store.del(LS_CUR); }
+  viewing = null;
+  show('setup');
+};
+function download(name, text, type){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+$('sumJson').onclick = () => {
+  const e = summaryEntry();
+  download(`tempus-bellum-${e.game.id}.json`, JSON.stringify(e, null, 2), 'application/json');
+};
+$('sumCsv').onclick = () => {
+  const e = summaryEntry(), g = e.game, c = compute(g, e.events);
+  const rows = [['gracz','runda','faza','sekundy']];
+  g.players.forEach((pl,p) => { for(let r=1; r<=g.rounds; r++) g.phases.forEach((ph,f) => {
+    const k = key(p,r,f); if(c.tot[k] !== undefined) rows.push([pl.name, r, ph, (cell(c,p,r,f)/1000).toFixed(1)]);
+  }); });
+  const csv = rows.map(r => r.map(v => /[",;\n]/.test(v) ? `"${String(v).replace(/"/g,'""')}"` : v).join(',')).join('\n');
+  download(`tempus-bellum-${g.id}.csv`, '﻿' + csv, 'text/csv');
+};
+
+/* ======================= NAWIGACJA ======================= */
+let screen = 'setup', ticker = null;
+function show(name){
+  screen = name;
+  for(const s of ['setup','game','summary']) $(s).classList.toggle('hidden', s !== name);
+  clearInterval(ticker); ticker = null;
+  if(name === 'setup'){
+    if(!setupPlayers.length) initSetup();
+    renderPlayers(); renderHistory();
+    $('resumeBox').classList.toggle('hidden', !(cur && !compute(cur.game, cur.events).ended));
+    document.documentElement.style.setProperty('--pc', 'var(--accent)');
+  }else if(name === 'game'){
+    lockScreen();
+    renderGame();
+    ticker = setInterval(renderGame, 250);
+  }else{
+    renderSummary();
+  }
+}
+function rerender(){ if(screen === 'game') renderGame(); else if(screen === 'summary') renderSummary(); }
+
+let toastTimer;
+function toast(msg){
+  let t = $('toast');
+  if(!t){ t = document.createElement('div'); t.id = 'toast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:#000d;color:#fff;padding:10px 16px;border-radius:10px;z-index:9;max-width:90vw;text-align:center';
+    document.body.appendChild(t); }
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = 'none', 2200);
+}
+
+/* start: jeśli była gra w toku (np. po przypadkowym odświeżeniu) – wracamy do niej */
+initSetup();
+if(cur && cur.game && cur.events?.length){
+  show(compute(cur.game, cur.events).ended ? 'summary' : 'game');
+}else{
+  cur = null; show('setup');
+}
+
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
