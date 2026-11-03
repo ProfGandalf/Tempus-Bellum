@@ -1,0 +1,42 @@
+{
+  "name": "tempus-bellum",
+  "productName": "Tempus Bellum",
+  "version": "0.1.0",
+  "description": "Phase timer for tabletop wargames",
+  "author": "ProfGandalf",
+  "homepage": "https://github.com/ProfGandalf/Tempus-Bellum",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:linux": "electron-builder --linux --publish never",
+    "dist:win": "electron-builder --win --publish never"
+  },
+  "build": {
+    "appId": "io.github.profgandalf.tempusbellum",
+    "productName": "Tempus Bellum",
+    "directories": { "output": "dist" },
+    "files": [
+      "index.html",
+      "icon.svg",
+      "manifest.webmanifest",
+      "electron/**",
+      "build/icon.png"
+    ],
+    "linux": {
+      "target": "AppImage",
+      "category": "Game",
+      "icon": "build/icon.png",
+      "artifactName": "Tempus-Bellum-linux-x86_64.${ext}"
+    },
+    "win": {
+      "target": "portable",
+      "icon": "build/icon.png",
+      "artifactName": "Tempus-Bellum-windows-x64.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  }
+}

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
@@ -13,7 +13,7 @@
 :root{
   --bg:#16181d; --panel:#21242b; --panel2:#2b2f38; --text:#eef0f4; --muted:#9aa1ad;
   --line:#3a3f4a; --accent:#e0b04a; --danger:#d9534f; --ok:#4caf7a;
-  --pc:#c0392b; /* bieżący kolor gracza */
+  --pc:#c0392b; /* current player colour */
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
@@ -41,7 +41,7 @@ h2{margin:8px 0 0;font-size:1.05rem;color:var(--muted);font-weight:600;text-tran
 .muted{color:var(--muted)}
 .small{font-size:.85rem}
 
-/* --- ekran gry --- */
+/* --- game screen --- */
 #game{padding:12px;gap:10px;max-width:none}
 #game .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 #who{font-size:clamp(1.8rem,7vw,3.4rem);font-weight:800;line-height:1.05;color:var(--pc);
@@ -76,7 +76,7 @@ h2{margin:8px 0 0;font-size:1.05rem;color:var(--muted);font-weight:600;text-tran
   #game .ctrl{grid-column:1;grid-row:6}
 }
 
-/* --- tabela --- */
+/* --- table --- */
 .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px}
 table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.95rem}
 th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -104,39 +104,39 @@ dialog .card{max-height:92dvh;overflow:auto}
 
 <!-- ============ SETUP ============ -->
 <section id="setup" class="screen hidden">
-  <h1>TEMPUS BELLUM<small>Zegar faz do bitew przy stole</small></h1>
+  <h1>TEMPUS BELLUM<small>Phase timer for tabletop battles</small></h1>
 
   <div id="resumeBox" class="card hidden">
-    <div>Masz niezakończoną grę.</div>
-    <button class="primary" id="resumeBtn">Wróć do gry</button>
+    <div>You have an unfinished game.</div>
+    <button class="primary" id="resumeBtn">Back to game</button>
   </div>
 
-  <h2>Gracze <span class="muted small">(kolejność = kto zaczyna)</span></h2>
+  <h2>Players <span class="muted small">(order = who goes first)</span></h2>
   <div class="card" id="playersBox"></div>
   <div class="row">
-    <button class="grow" id="addPlayer">+ Gracz</button>
-    <button class="grow" id="swapPlayers">⇅ Zamień kolejność</button>
+    <button class="grow" id="addPlayer">+ Player</button>
+    <button class="grow" id="swapPlayers">⇅ Swap order</button>
   </div>
 
-  <h2>Gra</h2>
+  <h2>Game</h2>
   <div class="card">
-    <label class="row"><span class="grow">Liczba rund</span>
+    <label class="row"><span class="grow">Rounds</span>
       <input id="rounds" type="number" min="1" max="20" value="5" style="width:90px"></label>
-    <label>Fazy (po jednej w linii)
+    <label>Phases (one per line)
       <textarea id="phases" rows="5"></textarea></label>
   </div>
 
-  <button class="primary" id="startBtn">▶ Start gry</button>
+  <button class="primary" id="startBtn">▶ Start game</button>
 
-  <h2>Ostatnie gry</h2>
-  <div class="card history" id="historyBox"><span class="muted">Brak.</span></div>
+  <h2>Recent games</h2>
+  <div class="card history" id="historyBox"><span class="muted">None yet.</span></div>
 </section>
 
 <!-- ============ GRA ============ -->
 <section id="game" class="screen hidden">
   <div class="info top">
     <div id="who">—</div>
-    <div id="round">Runda <b id="roundNo">1</b>/<span id="roundMax">5</span></div>
+    <div id="round">Round <b id="roundNo">1</b>/<span id="roundMax">5</span></div>
   </div>
   <div class="info" id="phaseLine">
     <div id="phase">—</div>
@@ -144,61 +144,74 @@ dialog .card{max-height:92dvh;overflow:auto}
   </div>
   <div class="info" id="steps"></div>
   <div class="info" id="sub">
-    <span>Tura: <b id="turnTime">0:00</b></span>
-    <span>Gracz łącznie: <b id="playerTime">0:00</b></span>
-    <span>Gra: <b id="gameTime">0:00</b></span>
-    <span id="pauseInfo" class="hidden">Pauzy: <b id="pauseTime">0:00</b></span>
+    <span>Turn: <b id="turnTime">0:00</b></span>
+    <span>Player total: <b id="playerTime">0:00</b></span>
+    <span>Game: <b id="gameTime">0:00</b></span>
+    <span id="pauseInfo" class="hidden">Paused: <b id="pauseTime">0:00</b></span>
   </div>
-  <button id="next">NASTĘPNA FAZA<small id="nextLabel"></small></button>
+  <button id="next">NEXT PHASE<small id="nextLabel"></small></button>
   <div class="ctrl">
-    <button id="undoBtn">↶ Cofnij</button>
-    <button id="pauseBtn">❚❚ Pauza</button>
-    <button id="tableBtn">▦ Tabela</button>
-    <button id="endBtn">■ Koniec</button>
+    <button id="undoBtn">↶ Undo</button>
+    <button id="pauseBtn">❚❚ Pause</button>
+    <button id="tableBtn">▦ Table</button>
+    <button id="endBtn">■ End</button>
   </div>
-  <div id="pausedBanner" class="hidden"><div>PAUZA</div></div>
+  <div id="pausedBanner" class="hidden"><div>PAUSED</div></div>
 </section>
 
 <!-- ============ PODSUMOWANIE ============ -->
 <section id="summary" class="screen hidden">
-  <h1 id="sumTitle">Podsumowanie</h1>
+  <h1 id="sumTitle">Summary</h1>
   <div class="muted small" id="sumMeta"></div>
   <div class="totals" id="sumTotals"></div>
   <div class="card"><div class="tablewrap" id="sumTable"></div>
-    <div class="muted small">Dotknij komórki, żeby ręcznie poprawić czas fazy.</div></div>
+    <div class="muted small">Tap a cell to correct a phase time by hand.</div></div>
   <div class="row">
-    <button class="grow" id="sumUndo">↶ Wróć do gry</button>
+    <button class="grow" id="sumUndo">↶ Back to game</button>
     <button class="grow" id="sumCsv">⇩ CSV</button>
     <button class="grow" id="sumJson">⇩ JSON</button>
   </div>
-  <button class="primary" id="newGameBtn">Nowa gra</button>
+  <button class="primary" id="newGameBtn">New game</button>
 </section>
 
-<!-- tabela w trakcie gry -->
+<!-- table during the game -->
 <dialog id="tableDlg"><div class="card">
-  <div class="row"><h2 class="grow" style="margin:0">Czasy faz</h2><button id="closeTable">✕</button></div>
+  <div class="row"><h2 class="grow" style="margin:0">Phase times</h2><button id="closeTable">✕</button></div>
   <div class="totals" id="dlgTotals"></div>
   <div class="tablewrap" id="dlgTable"></div>
-  <div class="muted small">Dotknij komórki, żeby ręcznie poprawić czas (np. ktoś zapomniał kliknąć).</div>
+  <div class="muted small">Tap a cell to correct a time by hand (e.g. someone forgot to tap).</div>
 </div></dialog>
+
+<!-- manual time correction (window.prompt() does not work in Electron) -->
+<dialog id="editDlg"><form method="dialog" class="card">
+  <h2 style="margin:0" id="editTitle">Correct time</h2>
+  <div class="muted small" id="editInfo"></div>
+  <input id="editInput" inputmode="decimal" autocomplete="off" placeholder="m:ss" style="font-size:1.6rem;text-align:center">
+  <div class="muted small" id="editErr" style="color:var(--danger)"></div>
+  <div class="row">
+    <button type="button" class="grow" onclick="this.closest('dialog').close()">Cancel</button>
+    <button class="grow primary" value="ok" id="editOk">Save</button>
+  </div>
+</form></dialog>
 
 <script>
 'use strict';
 /* =====================================================================
-   Model: zapisujemy ZDARZENIA, nie czasy. Czasy liczymy przy wyświetlaniu.
-   Zdarzenia:
-     {type:'phase',  t, p, r, f}   – start fazy f gracza p w rundzie r
-     {type:'pause',  t}            – pauza (czas nie leci)
+   Model: we store EVENTS, not durations. Durations are computed on display.
+   Events:
+     {type:'phase',  t, p, r, f}   – player p starts phase f in round r
+     {type:'pause',  t}            – pause (time does not count)
      {type:'resume', t}
-     {type:'end',    t}            – koniec gry
-     {type:'adjust', t, k, d}      – ręczna korekta: d ms do komórki k ("p|r|f")
-   Cofnij = usuń ostatnie zdarzenie.
+     {type:'end',    t}            – game over
+     {type:'adjust', t, k, d}      – manual correction: add d ms to cell k ("p|r|f")
+   Undo = remove the last event.
    ===================================================================== */
 const LS_CUR = 'tempus-bellum:current';
 const LS_ARCH = 'tempus-bellum:archive';
 const LS_PREFS = 'tempus-bellum:prefs';
 const DEFAULT_PHASES = ['Command','Movement','Shooting','Charge','Fight'];
 const COLORS = ['#c0392b','#2e6fd8','#2f9e5b','#8e44ad','#d68910','#16a3a3'];
+const LOCALE = 'en-GB';
 
 const $ = id => document.getElementById(id);
 const store = {
@@ -208,9 +221,9 @@ const store = {
 };
 
 let cur = store.get(LS_CUR, null);   // {game, events}
-let viewing = null;                   // gra z archiwum oglądana w podsumowaniu
+let viewing = null;                   // archived game shown on the summary screen
 
-/* ---------- formatowanie ---------- */
+/* ---------- formatting ---------- */
 function fmt(ms){
   ms = Math.max(0, Math.round(ms/1000));
   const h = Math.floor(ms/3600), m = Math.floor(ms%3600/60), s = ms%60;
@@ -227,19 +240,19 @@ function parseTime(str){
 const key = (p,r,f) => `${p}|${r}|${f}`;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-/* ---------- logika kolejności ---------- */
+/* ---------- turn order ---------- */
 function nextPos(g, pos){
   let {p,r,f} = pos;
   if(++f >= g.phases.length){ f = 0; if(++p >= g.players.length){ p = 0; r++; } }
   return r > g.rounds ? null : {p,r,f};
 }
 
-/* ---------- wyliczanie czasów ze zdarzeń ---------- */
+/* ---------- computing durations from events ---------- */
 function compute(g, events, now = Date.now()){
   const tot = {}, adjusted = new Set();
   const add = (k, ms) => tot[k] = (tot[k] || 0) + ms;
   let pos = null, segStart = 0, paused = false, pauseStart = 0, pausedMs = 0;
-  let ended = false, startT = null, endT = null, phaseMs = 0, phaseStartT = 0;
+  let ended = false, startT = null, endT = null, phaseMs = 0;
   const close = t => { if(pos && !paused && !ended){ const d = t - segStart; add(key(pos.p,pos.r,pos.f), d); phaseMs += d; } };
 
   for(const e of events){
@@ -247,7 +260,7 @@ function compute(g, events, now = Date.now()){
       case 'phase':
         close(e.t);
         if(startT === null) startT = e.t;
-        pos = {p:e.p, r:e.r, f:e.f}; segStart = e.t; phaseMs = 0; phaseStartT = e.t;
+        pos = {p:e.p, r:e.r, f:e.f}; segStart = e.t; phaseMs = 0;
         break;
       case 'pause':
         if(!paused){ close(e.t); paused = true; pauseStart = e.t; }
@@ -283,7 +296,7 @@ function sumPlayerRound(g, c, p, r){ let s = 0; for(let f=0; f<g.phases.length; 
 function sumPlayer(g, c, p){ let s = 0; for(let r=1; r<=g.rounds; r++) s += sumPlayerRound(g,c,p,r); return s; }
 function sumPlayerPhase(g, c, p, f){ let s = 0; for(let r=1; r<=g.rounds; r++) s += cell(c,p,r,f); return s; }
 
-/* ---------- zapis ---------- */
+/* ---------- persistence ---------- */
 function save(){
   store.set(LS_CUR, cur);
 }
@@ -307,7 +320,7 @@ async function lockScreen(){
       wakeLock = await navigator.wakeLock.request('screen');
       wakeLock.addEventListener('release', () => wakeLock = null);
     }
-  }catch(e){ /* brak wsparcia lub odmowa – trudno */ }
+  }catch(e){ /* not supported or denied – nothing we can do */ }
 }
 function unlockScreen(){ if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock = null; } }
 document.addEventListener('visibilitychange', () => {
@@ -318,7 +331,7 @@ document.addEventListener('visibilitychange', () => {
 let setupPlayers = [];
 function initSetup(){
   const prefs = store.get(LS_PREFS, {});
-  setupPlayers = prefs.players || [{name:'Gracz 1', color:COLORS[0]}, {name:'Gracz 2', color:COLORS[1]}];
+  setupPlayers = prefs.players || [{name:'Player 1', color:COLORS[0]}, {name:'Player 2', color:COLORS[1]}];
   $('rounds').value = prefs.rounds || 5;
   $('phases').value = (prefs.phases || DEFAULT_PHASES).join('\n');
 }
@@ -327,9 +340,9 @@ function renderPlayers(){
   setupPlayers.forEach((pl, i) => {
     const row = document.createElement('div'); row.className = 'row';
     row.innerHTML = `<span class="muted" style="width:1.2em">${i+1}.</span>
-      <input class="grow" value="${esc(pl.name)}" maxlength="30" aria-label="Nazwa gracza ${i+1}">
-      <input type="color" class="swatch" value="${pl.color}" aria-label="Kolor">
-      ${setupPlayers.length > 2 ? '<button aria-label="Usuń">✕</button>' : ''}`;
+      <input class="grow" value="${esc(pl.name)}" maxlength="30" aria-label="Player ${i+1} name">
+      <input type="color" class="swatch" value="${pl.color}" aria-label="Colour">
+      ${setupPlayers.length > 2 ? '<button aria-label="Remove">✕</button>' : ''}`;
     const [name, color] = row.querySelectorAll('input');
     name.oninput = () => pl.name = name.value;
     name.onfocus = () => name.select();
@@ -342,19 +355,19 @@ function renderPlayers(){
 $('addPlayer').onclick = () => {
   if(setupPlayers.length >= 6) return;
   const n = setupPlayers.length;
-  setupPlayers.push({name:`Gracz ${n+1}`, color:COLORS[n % COLORS.length]});
+  setupPlayers.push({name:`Player ${n+1}`, color:COLORS[n % COLORS.length]});
   renderPlayers();
 };
 $('swapPlayers').onclick = () => { setupPlayers.push(setupPlayers.shift()); renderPlayers(); };
 
 $('startBtn').onclick = () => {
   if(cur && !compute(cur.game, cur.events).ended && cur.events.length > 1 &&
-     !confirm('Porzucić niezakończoną grę i zacząć nową?')) return;
+     !confirm('Abandon the unfinished game and start a new one?')) return;
   if(cur && cur.events.length > 1) archive(cur);
   const phases = $('phases').value.split('\n').map(s => s.trim()).filter(Boolean);
   const rounds = Math.min(20, Math.max(1, parseInt($('rounds').value) || 5));
-  const players = setupPlayers.map((p,i) => ({name: p.name.trim() || `Gracz ${i+1}`, color: p.color}));
-  if(!phases.length) return alert('Podaj co najmniej jedną fazę.');
+  const players = setupPlayers.map((p,i) => ({name: p.name.trim() || `Player ${i+1}`, color: p.color}));
+  if(!phases.length) return alert('Enter at least one phase.');
   store.set(LS_PREFS, {players, rounds, phases});
   cur = { game: {id: Date.now().toString(36), createdAt: Date.now(), players, phases, rounds}, events: [] };
   push({type:'phase', p:0, r:1, f:0});
@@ -365,25 +378,21 @@ $('resumeBtn').onclick = () => show('game');
 function renderHistory(){
   const a = store.get(LS_ARCH, []);
   const box = $('historyBox');
-  if(!a.length){ box.innerHTML = '<span class="muted">Brak.</span>'; return; }
+  if(!a.length){ box.innerHTML = '<span class="muted">None yet.</span>'; return; }
   box.innerHTML = '';
   a.forEach(entry => {
     const c = compute(entry.game, entry.events);
     const b = document.createElement('button');
     const d = new Date(entry.game.createdAt);
     b.innerHTML = `<span>${esc(entry.game.players.map(p=>p.name).join(' vs '))}<br>
-      <span class="muted small">${d.toLocaleDateString('pl-PL')} ${d.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})}</span></span>
+      <span class="muted small">${d.toLocaleDateString(LOCALE)} ${d.toLocaleTimeString(LOCALE,{hour:'2-digit',minute:'2-digit'})}</span></span>
       <b>${fmt(c.gameMs)}</b>`;
     b.onclick = () => { viewing = entry; show('summary'); };
     box.appendChild(b);
   });
 }
 
-/* ======================= GRA ======================= */
-function lastPhaseEvent(){
-  for(let i = cur.events.length-1; i >= 0; i--) if(cur.events[i].type === 'phase') return cur.events[i];
-  return null;
-}
+/* ======================= GAME ======================= */
 function renderGame(){
   if(!cur) return;
   const g = cur.game, c = compute(g, cur.events);
@@ -409,17 +418,17 @@ function renderGame(){
   const nx = nextPos(g, pos), btn = $('next');
   btn.classList.toggle('paused', c.paused);
   if(c.paused){
-    btn.firstChild.textContent = '▶ WZNÓW';
-    $('nextLabel').textContent = `pauza ${fmt(c.curPause)}`;
+    btn.firstChild.textContent = '▶ RESUME';
+    $('nextLabel').textContent = `paused ${fmt(c.curPause)}`;
   }else if(!nx){
-    btn.firstChild.textContent = 'KONIEC GRY';
-    $('nextLabel').textContent = 'to była ostatnia faza';
+    btn.firstChild.textContent = 'END GAME';
+    $('nextLabel').textContent = 'that was the last phase';
   }else{
-    btn.firstChild.textContent = 'NASTĘPNA FAZA';
-    $('nextLabel').textContent = '→ ' + (nx.p !== pos.p ? `${g.players[nx.p].name}${nx.r !== pos.r ? ` · runda ${nx.r}` : ''} · ` : '') + g.phases[nx.f];
+    btn.firstChild.textContent = 'NEXT PHASE';
+    $('nextLabel').textContent = '→ ' + (nx.p !== pos.p ? `${g.players[nx.p].name}${nx.r !== pos.r ? ` · round ${nx.r}` : ''} · ` : '') + g.phases[nx.f];
   }
   $('pauseBtn').classList.toggle('on', c.paused);
-  $('pauseBtn').textContent = c.paused ? '▶ Wznów' : '❚❚ Pauza';
+  $('pauseBtn').textContent = c.paused ? '▶ Resume' : '❚❚ Pause';
   $('pausedBanner').classList.toggle('hidden', !c.paused);
   $('undoBtn').disabled = cur.events.length <= 1;
   if($('tableDlg').open) renderTable($('dlgTable'), $('dlgTotals'), cur, c);
@@ -428,7 +437,7 @@ function renderGame(){
 let lastTap = 0;
 $('next').onclick = () => {
   const now = Date.now();
-  if(now - lastTap < 600) return;   // ochrona przed podwójnym trafieniem łokciem
+  if(now - lastTap < 600) return;   // guard against an accidental double hit with an elbow
   lastTap = now;
   const g = cur.game, c = compute(g, cur.events, now);
   if(c.ended) return;
@@ -436,7 +445,7 @@ $('next').onclick = () => {
   else{
     const nx = nextPos(g, c.pos);
     if(nx) push({type:'phase', t:now, ...nx});
-    else { if(!confirm('To była ostatnia faza. Zakończyć grę?')) return; endGame(now); return; }
+    else { if(!confirm('That was the last phase. End the game?')) return; endGame(now); return; }
   }
   renderGame();
 };
@@ -449,14 +458,14 @@ $('undoBtn').onclick = () => {
   if(cur.events.length <= 1) return;
   const e = cur.events[cur.events.length-1];
   const g = cur.game;
-  const what = e.type === 'phase' ? `start fazy „${g.phases[e.f]}” (${g.players[e.p].name}, runda ${e.r})`
-    : e.type === 'pause' ? 'pauzę' : e.type === 'resume' ? 'wznowienie' : e.type === 'adjust' ? 'ręczną korektę' : 'zdarzenie';
+  const what = e.type === 'phase' ? `start of “${g.phases[e.f]}” (${g.players[e.p].name}, round ${e.r})`
+    : e.type === 'pause' ? 'pause' : e.type === 'resume' ? 'resume' : e.type === 'adjust' ? 'manual correction' : 'event';
   cur.events.pop(); save();
-  toast(`Cofnięto: ${what}`);
+  toast(`Undone: ${what}`);
   renderGame();
 };
 $('endBtn').onclick = () => {
-  if(confirm('Zakończyć grę teraz?')) endGame(Date.now());
+  if(confirm('End the game now?')) endGame(Date.now());
 };
 function endGame(t){
   push({type:'end', t});
@@ -472,13 +481,13 @@ $('tableBtn').onclick = () => {
 $('closeTable').onclick = () => $('tableDlg').close();
 
 document.addEventListener('keydown', e => {
-  if($('game').classList.contains('hidden') || $('tableDlg').open) return;
+  if($('game').classList.contains('hidden') || $('tableDlg').open || $('editDlg').open) return;
   if(e.code === 'Space' || e.code === 'Enter'){ e.preventDefault(); lastTap = 0; $('next').click(); }
   else if(e.key === 'p') $('pauseBtn').click();
   else if(e.key === 'z' || e.key === 'Backspace') $('undoBtn').click();
 });
 
-/* ======================= TABELA ======================= */
+/* ======================= TABLE ======================= */
 function renderTable(tableEl, totalsEl, entry, c){
   const g = entry.game;
   const isLive = entry === cur && !c.ended;
@@ -487,15 +496,15 @@ function renderTable(tableEl, totalsEl, entry, c){
   totalsEl.innerHTML = g.players.map((pl,p) => `<div class="tot" style="--c:${pl.color}">
       ${esc(pl.name)}<b>${fmt(totals[p])}</b>
       <div class="bar" style="width:${(totals[p]/max*100).toFixed(1)}%"></div></div>`).join('')
-    + `<div class="tot" style="--c:var(--muted)">Cała gra<b>${fmt(c.gameMs)}</b>
-      <span class="muted small">pauzy ${fmt(c.pausedMs)}</span></div>`;
+    + `<div class="tot" style="--c:var(--muted)">Whole game<b>${fmt(c.gameMs)}</b>
+      <span class="muted small">paused ${fmt(c.pausedMs)}</span></div>`;
 
-  // ostatnia runda z jakimkolwiek czasem – nie pokazujemy pustych rund z przyszłości
+  // last round with any time recorded – don't show empty future rounds
   let lastR = 1;
   for(let r=1; r<=g.rounds; r++) for(let p=0; p<g.players.length; p++) if(sumPlayerRound(g,c,p,r) > 0) lastR = r;
   if(c.pos) lastR = Math.max(lastR, c.pos.r);
 
-  let h = `<table><thead><tr><th>Runda</th>${g.phases.map(f=>`<th>${esc(f)}</th>`).join('')}<th>Σ</th></tr></thead><tbody>`;
+  let h = `<table><thead><tr><th>Round</th>${g.phases.map(f=>`<th>${esc(f)}</th>`).join('')}<th>Σ</th></tr></thead><tbody>`;
   g.players.forEach((pl, p) => {
     h += `<tr class="ph"><td colspan="${g.phases.length+2}" style="color:${pl.color}">${esc(pl.name)}</td></tr>`;
     for(let r=1; r<=lastR; r++){
@@ -514,24 +523,32 @@ function renderTable(tableEl, totalsEl, entry, c){
   tableEl.querySelectorAll('td.cell').forEach(td => td.onclick = () => correctCell(entry, td.dataset.k));
 }
 
+let editing = null;   // {entry, k}
 function correctCell(entry, k){
   const g = entry.game;
   const [p,r,f] = k.split('|').map(Number);
-  const c = compute(g, entry.events);
-  const curMs = cell(c,p,r,f);
-  const v = prompt(`${g.players[p].name} · runda ${r} · ${g.phases[f]}\nObecnie: ${fmt(curMs)}\nNowy czas (m:ss):`, fmt(curMs));
-  if(v === null) return;
-  const ms = parseTime(v);
-  if(ms === null) return alert('Nie rozumiem tego czasu. Użyj formatu m:ss, np. 3:45.');
+  const ms = cell(compute(g, entry.events), p, r, f);
+  editing = {entry, k};
+  $('editInfo').textContent = `${g.players[p].name} · round ${r} · ${g.phases[f]} · currently ${fmt(ms)}`;
+  $('editInput').value = fmt(ms);
+  $('editErr').textContent = '';
+  $('editDlg').showModal();
+  $('editInput').select();
+}
+$('editOk').onclick = e => {
+  const ms = parseTime($('editInput').value);
+  if(ms === null){ e.preventDefault(); $('editErr').textContent = 'Use m:ss, e.g. 3:45.'; return; }
+  const {entry, k} = editing;
+  const c = compute(entry.game, entry.events);
   const d = ms - (c.tot[k] || 0);
   if(Math.abs(d) < 500) return;
   entry.events.push({type:'adjust', t:Date.now(), k, d});
   if(entry === cur) save();
   if(c.ended) archive(entry);
   rerender();
-}
+};
 
-/* ======================= PODSUMOWANIE ======================= */
+/* ======================= SUMMARY ======================= */
 function summaryEntry(){ return viewing || cur; }
 function renderSummary(){
   const entry = summaryEntry();
@@ -539,14 +556,14 @@ function renderSummary(){
   const g = entry.game, c = compute(g, entry.events);
   $('sumTitle').textContent = g.players.map(p=>p.name).join(' vs ');
   const d = new Date(g.createdAt);
-  $('sumMeta').textContent = `${d.toLocaleString('pl-PL')} · ${g.rounds} rund · ${c.ended ? 'zakończona' : 'w trakcie'}`;
+  $('sumMeta').textContent = `${d.toLocaleString(LOCALE)} · ${g.rounds} rounds · ${c.ended ? 'finished' : 'in progress'}`;
   renderTable($('sumTable'), $('sumTotals'), entry, c);
   $('sumUndo').classList.toggle('hidden', entry !== cur || !c.ended);
   document.documentElement.style.setProperty('--pc', 'var(--accent)');
   document.querySelector('meta[name=theme-color]').content = '#16181d';
 }
 $('sumUndo').onclick = () => {
-  // cofnięcie zdarzenia "koniec" – wracamy do gry
+  // undo the "end" event – back to the game
   if(cur.events.at(-1)?.type === 'end'){ cur.events.pop(); save(); }
   show('game');
 };
@@ -567,15 +584,15 @@ $('sumJson').onclick = () => {
 };
 $('sumCsv').onclick = () => {
   const e = summaryEntry(), g = e.game, c = compute(g, e.events);
-  const rows = [['gracz','runda','faza','sekundy']];
+  const rows = [['player','round','phase','seconds']];
   g.players.forEach((pl,p) => { for(let r=1; r<=g.rounds; r++) g.phases.forEach((ph,f) => {
     const k = key(p,r,f); if(c.tot[k] !== undefined) rows.push([pl.name, r, ph, (cell(c,p,r,f)/1000).toFixed(1)]);
   }); });
   const csv = rows.map(r => r.map(v => /[",;\n]/.test(v) ? `"${String(v).replace(/"/g,'""')}"` : v).join(',')).join('\n');
-  download(`tempus-bellum-${g.id}.csv`, '﻿' + csv, 'text/csv');
+  download(`tempus-bellum-${g.id}.csv`, '\ufeff' + csv, 'text/csv');
 };
 
-/* ======================= NAWIGACJA ======================= */
+/* ======================= NAVIGATION ======================= */
 let screen = 'setup', ticker = null;
 function show(name){
   screen = name;
@@ -606,7 +623,7 @@ function toast(msg){
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = 'none', 2200);
 }
 
-/* start: jeśli była gra w toku (np. po przypadkowym odświeżeniu) – wracamy do niej */
+/* startup: if a game was in progress (e.g. after an accidental refresh) – go straight back to it */
 initSetup();
 if(cur && cur.game && cur.events?.length){
   show(compute(cur.game, cur.events).ended ? 'summary' : 'game');
