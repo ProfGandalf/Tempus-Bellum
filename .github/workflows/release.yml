@@ -1,0 +1,35 @@
+name: Release
+
+# Push a tag like v0.1.0 to build the desktop apps and publish them as a GitHub release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            script: dist:linux
+            file: dist/Tempus-Bellum-linux-x86_64.AppImage
+          - os: windows-latest
+            script: dist:win
+            file: dist/Tempus-Bellum-windows-x64.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run ${{ matrix.script }}
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.file }}
+          generate_release_notes: true

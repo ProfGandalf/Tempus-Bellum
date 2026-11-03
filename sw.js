@@ -1,5 +1,5 @@
-// Service worker: network-first z fallbackiem do cache dla plików aplikacji, żeby działała offline.
-const CACHE = 'tempus-bellum-v1';
+// Service worker: network-first with cache fallback for the app files, so it works offline.
+const CACHE = 'tempus-bellum-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -10,7 +10,7 @@ self.addEventListener('activate', e => {
     .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
-// Sieć najpierw (żeby łapać aktualizacje), cache gdy offline.
+// Network first (to pick up updates), cache when offline.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
